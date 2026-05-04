@@ -1,0 +1,143 @@
+x-airflow-common: &airflow-common
+  build: .
+  environment:
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+
+    # Airflow metadata DB
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@db:5432/airflow_db
+
+    AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+    AIRFLOW__LOGGING__BASE_LOG_FOLDER: /opt/airflow/logs
+    AIRFLOW__LOGGING__REMOTE_LOGGING: "False"
+
+    # Airflow 3 Execution API
+    AIRFLOW__CORE__EXECUTION_API_SERVER_URL: http://airflow-api-server:8080/execution/
+
+    AIRFLOW__API_AUTH__JWT_SECRET: "my-super-secret-airflow-3-jwt-key-2026"
+
+    # Airflow 3 Simple Auth
+    AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_USERS: "admin:admin"
+    AIRFLOW__CORE__SIMPLE_AUTH_MANAGER_ALL_ADMINS: "False"
+
+    # Secrets
+    AIRFLOW__CORE__FERNET_KEY: "YZ2gbYCZwHk6Px8OXMO2nKFp-RBFeD24eHgx5QOYlN0="
+    AIRFLOW__WEBSERVER__SECRET_KEY: "f22c358a814266ae97c2dbfece02abec192ee7323eeb097693db80c854b973de"
+
+    # Airflow 3 DAG Bundle config
+    AIRFLOW__DAG_PROCESSOR__DAG_BUNDLE_CONFIG_LIST: >
+      [
+        {
+          "name": "dags-folder",
+          "classpath": "airflow.dag_processing.bundles.local.LocalDagBundle",
+          "kwargs": {}
+        }
+      ]
+
+    AIRFLOW__DAG_PROCESSOR__REFRESH_INTERVAL: "30"
+    AIRFLOW__DAG_PROCESSOR__BUNDLE_REFRESH_CHECK_INTERVAL: "5"
+
+  volumes:
+    - ./airflow/dags:/opt/airflow/dags
+    - ./airflow/logs:/opt/airflow/logs
+    - ./ecommerce_dbt:/opt/airflow/ecommerce_dbt
+    - ./data_generation:/opt/airflow/data_generation
+    - ~/.dbt:/opt/airflow/.dbt
+
+  networks:
+    - my-network
+
+  depends_on:
+    - db
+
+
+services:
+  db:
+    container_name: postgres_ecommerce_container
+    image: postgres:14.17
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: db
+      POSTGRES_USER: db_user
+      POSTGRES_PASSWORD: db_password
+    volumes:
+      - ./postgres/data:/var/lib/postgresql/data
+      - ./postgres/airflow_init.sql:/docker-entrypoint-initdb.d/airflow_init.sql
+    networks:
+      - my-network
+
+
+  airflow-init:
+    <<: *airflow-common
+    container_name: airflow_init_ecommerce_container
+    restart: "no"
+    command: bash -c "airflow db migrate"
+
+
+  airflow-api-server:
+    <<: *airflow-common
+    container_name: airflow_api_server_ecommerce_container
+    hostname: airflow-api-server
+    restart: always
+    ports:
+      - "8080:8080"
+    command: api-server
+    depends_on:
+      - airflow-init
+      - db
+
+
+  airflow-scheduler:
+    <<: *airflow-common
+    container_name: airflow_scheduler_ecommerce_container
+    hostname: airflow-scheduler
+    restart: always
+    command: scheduler
+    depends_on:
+      - airflow-init
+      - db
+      - airflow-api-server
+
+
+  airflow-dag-processor:
+    <<: *airflow-common
+    container_name: airflow_dag_processor_ecommerce_container
+    hostname: airflow-dag-processor
+    restart: always
+    command: dag-processor
+    depends_on:
+      - airflow-init
+      - db
+
+
+  airflow-triggerer:
+    <<: *airflow-common
+    container_name: airflow_triggerer_ecommerce_container
+    hostname: airflow-triggerer
+    restart: always
+    command: triggerer
+    depends_on:
+      - airflow-init
+      - db
+      - airflow-api-server
+
+
+  dbt:
+    container_name: dbt_ecommerce_container
+    image: ghcr.io/dbt-labs/dbt-postgres:1.9.latest
+    volumes:
+      - ./ecommerce_dbt:/usr/app
+      - ~/.dbt:/root/.dbt
+    working_dir: /usr/app
+    networks:
+      - my-network
+    depends_on:
+      - db
+    environment:
+      - DBT_PROFILES_DIR=/root/.dbt
+    command: debug
+
+
+networks:
+  my-network:
+    driver: bridge

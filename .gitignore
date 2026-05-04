@@ -1,0 +1,16 @@
+venv/
+__pycache__/
+*.pyc
+
+logs/
+airflow/logs/
+ecommerce_dbt/logs/
+ecommerce_dbt/target/
+ecommerce_dbt/dbt_packages/
+
+postgres/data/
+
+.env
+*.env
+
+.DS_Store
