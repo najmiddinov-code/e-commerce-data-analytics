@@ -1,0 +1,29 @@
+version: 2
+
+sources:
+  - name: raw_ecommerce
+    schema: raw
+    tables:
+      - name: customers
+        columns:
+          - name: customer_id
+          - name: name
+          - name: email
+          - name: customer_location
+          - name: created_at
+      - name: products
+        columns:
+          - name: product_id
+          - name: name
+          - name: product_category
+          - name: price
+          - name: created_at
+      - name: orders
+        columns:
+          - name: order_id
+          - name: customer_id
+          - name: product_id
+          - name: quantity
+          - name: total_price
+          - name: order_date
+      
