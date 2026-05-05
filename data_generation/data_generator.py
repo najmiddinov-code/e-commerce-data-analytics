@@ -1,5 +1,4 @@
 import psycopg2
-import time
 import random
 from faker import Faker
 from insert_records import create_table
@@ -109,12 +108,12 @@ def generate_dirty_data():
             status = "DIRTY DATA" if price < 0 or quantity <= 0 or "@" not in customer_email else "CLEAN"
             print(f"[{status}] Customer: '{customer_name}', Email: {customer_email}, Price: ${price}, Quantity: {quantity}, Total: ${total_price}")
 
-            # time.sleep(random.randint(5, 7) * 60)
 
     except KeyboardInterrupt:
         print("\n Generator has stopped")
     except Exception as e:
         print(f"\n Recording error in database: {e}")
+        raise
     finally:
         cursor.close()
         conn.close()

@@ -1,5 +1,4 @@
 import psycopg2
-from psycopg2.extras import execute_values
 
 
 def connect_to_db():
@@ -89,4 +88,5 @@ def main():
             conn.close()
             print('Database connection closed.')
 
-main()
+if __name__ == "__main__":
+    main()
