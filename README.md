@@ -228,13 +228,13 @@ The pipeline runs every 5 minutes.
 
 The Superset dashboard provides a high-level overview of e-commerce performance.
 
-![Superset Dashboard](docs/images/superset-dashboard.png)
+![Superset Dashboard](docs/images/superset_dashboard_preview.png)
 
 ### Airflow DAG Success Run
 
 The Airflow DAG successfully orchestrates the full pipeline.
 
-![Airflow DAG Success](docs/images/airflow-dag-success.png)
+![Airflow DAG Success](docs/images/aws_airflow2.png)
 
 ---
 
